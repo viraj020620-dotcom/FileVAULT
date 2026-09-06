@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Vault Pro</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: rgba(23, 32, 53, 0.85);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent: #38bdf8;
+      --accent-grad: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%);
+      --gold-grad: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --danger: #ef4444;
+      --success: #10b981;
+      --warning: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 16px;
+      padding-bottom: 50px;
+    }
+    .header { text-align: center; margin-bottom: 16px; }
+    .header h1 { font-size: 22px; font-weight: 800; background: var(--accent-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .header p { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    
+    .badge-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .badge { padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .badge-admin { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+    .badge-vip { background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid var(--warning); }
+    .badge-user { background: rgba(56, 189, 248, 0.2); color: var(--accent); border: 1px solid var(--accent); }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+      backdrop-filter: blur(10px);
+    }
+    .card-locked { text-align: center; padding: 24px 16px; border: 1px dashed var(--accent); }
+    .feature-list { text-align: left; font-size: 13px; margin: 16px 0; line-height: 1.8; color: var(--text-muted); }
+    .feature-list b { color: var(--text); }
+
+    .btn {
+      display: block; width: 100%; padding: 11px; border-radius: 10px; font-size: 13px; font-weight: 600;
+      text-align: center; text-decoration: none; cursor: pointer; border: none; margin-top: 8px;
+    }
+    .btn-primary { background: var(--accent-grad); color: #fff; }
+    .btn-gold { background: var(--gold-grad); color: #fff; }
+    .btn-sec { background: rgba(255,255,255,0.08); color: var(--text); }
+    .btn-danger { background: rgba(239,68,68,0.15); color: var(--danger); border: 1px solid var(--danger); }
+
+    .stats-row {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px;
+      padding: 8px; background: rgba(0,0,0,0.25); border-radius: 8px; margin: 10px 0;
+    }
+    .stat-item span { color: var(--text-muted); display: block; font-size: 10px; text-transform: uppercase; }
+    .stat-item b { font-size: 13px; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>FILE VAULT PRO</h1>
+    <p>Admin: MRINFERNAL (@MRINFERNAL)</p>
+  </div>
+
+  <div class="badge-bar">
+    <span id="roleBadge" class="badge">Loading...</span>
+    <span id="statusInfo" style="font-size: 12px; color: var(--text-muted);"></span>
+  </div>
+
+  <div id="mainContainer"></div>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    // 🔴 REPLACE WITH YOUR NUMERIC TELEGRAM USER ID
+    const ADMIN_ID = 123456789;
+
+    const currentUser = tg.initDataUnsafe?.user || { id: 123456789, username: "MRINFERNAL" };
+    const isAdmin = (currentUser.id === ADMIN_ID);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    let payload = { records: [], is_vip: false, webapp_unlocked: false, ref_count: 0 };
+    try {
+      const raw = urlParams.get("data");
+      if (raw) payload = JSON.parse(decodeURIComponent(raw));
+    } catch(e) { console.error(e); }
+
+    const isVip = payload.is_vip || isAdmin;
+    const isUnlocked = payload.webapp_unlocked || isVip || isAdmin;
+
+    const roleBadge = document.getElementById("roleBadge");
+    if (isAdmin) {
+      roleBadge.innerText = "👑 Master Admin";
+      roleBadge.className = "badge badge-admin";
+    } else if (isVip) {
+      roleBadge.innerText = "⭐ VIP Member";
+      roleBadge.className = "badge badge-vip";
+    } else {
+      roleBadge.innerText = "Free User";
+      roleBadge.className = "badge badge-user";
+    }
+
+    const container = document.getElementById("mainContainer");
+
+    if (!isUnlocked) {
+      container.innerHTML = `
+        <div class="card card-locked">
+          <div style="font-size: 36px; margin-bottom: 8px;">🔐</div>
+          <h2 style="font-size: 18px; margin-bottom: 6px;">Web App Dashboard Locked</h2>
+          <p style="font-size: 12px; color: var(--text-muted);">Unlock interactive features far superior to standard bot commands.</p>
+          
+          <div class="feature-list">
+            ✔️ <b>Visual Dashboard:</b> Manage passwords, nicknames & links<br>
+            ✔️ <b>Realtime View Counters:</b> See who accesses your files<br>
+            ✔️ <b>Custom VIP Greetings:</b> Personalized recipient screens<br>
+            ✔️ <b>Instant Link Deleter:</b> Expire sensitive links anytime
+          </div>
+
+          <div style="background:rgba(56,189,248,0.1); padding:10px; border-radius:8px; font-size:12px; margin-bottom:12px;">
+            👥 Your Referrals: <b>${payload.ref_count || 0} / 2</b>
+          </div>
+
+          <button onclick="payUnlock()" class="btn btn-gold">⚡ Unlock Instantly for ₹5</button>
+          <button onclick="shareReferral()" class="btn btn-primary">👥 Invite 2 Friends (Free Unlock)</button>
+        </div>
+      `;
+    } else {
+      let records = isAdmin ? payload.records : payload.records.filter(r => String(r.owner_id) === String(currentUser.id));
+
+      if (records.length === 0) {
+        container.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:40px;">No files found in database.</p>`;
+      } else {
+        container.innerHTML = records.map(item => `
+          <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <div>
+                <b style="font-size:15px;">📦 ${escapeHtml(item.nickname || 'Untitled')}</b>
+                <div style="font-size:11px; color:var(--text-muted);">ID: <code>${item.id}</code> • Files: ${item.file_count}</div>
+              </div>
+              <span class="badge ${item.is_vip ? 'badge-vip' : 'badge-user'}">${item.is_vip ? 'VIP' : 'FREE'}</span>
+            </div>
+
+            <div class="stats-row">
+              <div class="stat-item"><span>Password</span><b>${item.password ? '🔒 ' + escapeHtml(item.password) : '🔓 Public'}</b></div>
+              <div class="stat-item"><span>Views</span><b>👁️ ${item.views || 0} clicks</b></div>
+              <div class="stat-item"><span>Expires</span><b>⏳ ${item.expires_in || 'Permanent'}</b></div>
+              <div class="stat-item"><span>Uploaded</span><b>📅 ${item.created_at ? item.created_at.split('T')[0] : 'N/A'}</b></div>
+              ${isAdmin ? `
+                <div class="stat-item" style="grid-column: span 2;">
+                  <span>Owner</span>
+                  <b>${escapeHtml(item.owner_username)} (<code>${item.owner_id}</code>)</b>
+                </div>
+              ` : ''}
+            </div>
+
+            <div style="display:flex; gap:6px; margin-top:10px;">
+              <a href="https://t.me/${item.bot_username}?start=${item.id}" class="btn btn-primary">🔗 Link</a>
+              <button onclick="deleteLink('${item.id}')" class="btn btn-danger">🗑️ Delete</button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function payUnlock() {
+      tg.sendData(JSON.stringify({ action: "buy_webapp" }));
+      tg.close();
+    }
+
+    function shareReferral() {
+      tg.sendData(JSON.stringify({ action: "get_referral_link" }));
+      tg.close();
+    }
+
+    function deleteLink(id) {
+      if (confirm("Delete this file link permanently?")) {
+        tg.sendData(JSON.stringify({ action: "delete_link", id: id }));
+        tg.close();
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+  </script>
+</body>
+</html>
