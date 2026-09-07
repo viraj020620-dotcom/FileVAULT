@@ -8,8 +8,8 @@
   <style>
     :root {
       --bg: #0b0f19;
-      --card-bg: rgba(23, 32, 53, 0.85);
-      --card-border: rgba(255, 255, 255, 0.08);
+      --card-bg: rgba(23, 32, 53, 0.9);
+      --card-border: rgba(255, 255, 255, 0.1);
       --accent: #38bdf8;
       --accent-grad: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%);
       --gold-grad: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
@@ -17,6 +17,7 @@
       --text-muted: #94a3b8;
       --danger: #ef4444;
       --warning: #f59e0b;
+      --success: #10b981;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -35,12 +36,11 @@
     .badge-vip { background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid var(--warning); }
     .badge-user { background: rgba(56, 189, 248, 0.2); color: var(--accent); border: 1px solid var(--accent); }
     .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
-    .card-locked { text-align: center; padding: 24px 16px; border: 1px dashed var(--accent); }
     .btn { display: block; width: 100%; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600; text-align: center; text-decoration: none; cursor: pointer; border: none; margin-top: 8px; }
     .btn-primary { background: var(--accent-grad); color: #fff; }
     .btn-gold { background: var(--gold-grad); color: #fff; }
     .btn-danger { background: rgba(239,68,68,0.15); color: var(--danger); border: 1px solid var(--danger); }
-    .stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px; padding: 8px; background: rgba(0,0,0,0.25); border-radius: 8px; margin: 10px 0; }
+    .stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 8px; margin: 10px 0; }
     .stat-item span { color: var(--text-muted); display: block; font-size: 10px; text-transform: uppercase; }
     .stat-item b { font-size: 13px; }
   </style>
@@ -52,9 +52,17 @@
   </div>
   <div class="badge-bar">
     <span id="roleBadge" class="badge">Loading...</span>
-    <span id="totalStats" style="font-size: 12px; color: var(--text-muted);"></span>
+    <span id="userTag" style="font-size: 12px; color: var(--text-muted);"></span>
   </div>
-  <div id="mainContainer"></div>
+  <div id="mainContainer">
+    <div class="card" style="text-align:center; padding: 20px;">
+      <p style="font-size:14px; margin-bottom: 8px;">🚀 <b>Dashboard Active</b></p>
+      <p style="font-size:12px; color:var(--text-muted);">Use the options below to manage your vault or create links directly inside @FILETOLINKSPRBOT.</p>
+      <button onclick="tgAction('start_upload')" class="btn btn-primary" style="margin-top:14px;">📤 Create New Link</button>
+      <button onclick="tgAction('myfiles')" class="btn btn-gold">📋 View My Saved Links</button>
+      <button onclick="tgAction('plans')" class="btn btn-primary" style="background:#22c55e;">💎 Upgrade Plans</button>
+    </div>
+  </div>
 
   <script>
     const tg = window.Telegram?.WebApp;
@@ -64,110 +72,29 @@
     }
 
     const ADMIN_ID = 5227795354;
-    const currentUser = tg?.initDataUnsafe?.user || { id: ADMIN_ID, username: "MRINFERNAL" };
-    const isAdmin = (Number(currentUser.id) === ADMIN_ID);
-
-    const urlParams = new URLSearchParams(window.location.search);
-    let payload = { records: [], is_vip: false, webapp_unlocked: false, ref_count: 0 };
-
-    try {
-      const raw = urlParams.get("data");
-      if (raw) {
-        payload = JSON.parse(decodeURIComponent(raw));
-      }
-    } catch(e) {
-      console.error("Payload parse error:", e);
-    }
-
-    const isVip = payload.is_vip || isAdmin;
-    const isUnlocked = payload.webapp_unlocked || isVip || isAdmin;
+    const user = tg?.initDataUnsafe?.user || { id: ADMIN_ID, first_name: "MRINFERNAL", username: "MRINFERNAL" };
+    const isAdmin = (Number(user.id) === ADMIN_ID);
 
     const roleBadge = document.getElementById("roleBadge");
+    const userTag = document.getElementById("userTag");
+
+    userTag.innerText = user.username ? `@${user.username}` : `ID: ${user.id}`;
+
     if (isAdmin) {
       roleBadge.innerText = "👑 Master Admin";
       roleBadge.className = "badge badge-admin";
-    } else if (isVip) {
-      roleBadge.innerText = "⭐ VIP Member";
-      roleBadge.className = "badge badge-vip";
     } else {
-      roleBadge.innerText = "Free User";
+      roleBadge.innerText = "Active User";
       roleBadge.className = "badge badge-user";
     }
 
-    const container = document.getElementById("mainContainer");
-
-    if (!isUnlocked) {
-      container.innerHTML = `
-        <div class="card card-locked">
-          <div style="font-size: 32px; margin-bottom: 8px;">🔐</div>
-          <h2 style="font-size: 16px; margin-bottom: 6px;">Web App Dashboard Locked</h2>
-          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Unlock full visual management, realtime analytics, and instant link controls.</p>
-          <div style="background:rgba(56,189,248,0.1); padding:10px; border-radius:8px; font-size:12px; margin-bottom:12px;">
-            👥 Referrals Completed: <b>${payload.ref_count || 0} / 2</b>
-          </div>
-          <button onclick="contactAdmin('buy_webapp')" class="btn btn-gold">⚡ Unlock Instantly for ₹5</button>
-          <button onclick="contactAdmin('referral')" class="btn btn-primary">👥 Invite 2 Friends (Free)</button>
-        </div>
-      `;
-    } else {
-      let records = isAdmin ? payload.records : payload.records.filter(r => String(r.owner_id) === String(currentUser.id));
-      document.getElementById("totalStats").innerText = `Total Links: ${records.length}`;
-
-      if (records.length === 0) {
-        container.innerHTML = `
-          <div class="card" style="text-align: center; padding: 24px 10px;">
-            <p style="color: var(--text-muted); font-size: 13px;">No active file bundles found.</p>
-            <p style="font-size: 12px; color: var(--accent); margin-top: 6px;">Upload files in the bot to see them here.</p>
-          </div>
-        `;
+    function tgAction(command) {
+      if (tg) {
+        tg.sendData(JSON.stringify({ action: command }));
+        tg.close();
       } else {
-        container.innerHTML = records.map(item => `
-          <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-              <div>
-                <b style="font-size:14px;">📦 ${escapeHtml(item.nickname || 'Untitled')}</b>
-                <div style="font-size:11px; color:var(--text-muted);">ID: <code>${item.id}</code> • Files: ${item.file_count || 1}</div>
-              </div>
-              <span class="badge ${item.is_vip ? 'badge-vip' : 'badge-user'}">${item.is_vip ? 'VIP' : 'FREE'}</span>
-            </div>
-            <div class="stats-row">
-              <div class="stat-item"><span>Password</span><b>${item.password ? '🔒 ' + escapeHtml(item.password) : '🔓 Public'}</b></div>
-              <div class="stat-item"><span>Views</span><b>👁️ ${item.views || 0}</b></div>
-              <div class="stat-item"><span>Expires</span><b>⏳ ${item.expires_in || 'Permanent'}</b></div>
-              <div class="stat-item"><span>Created</span><b>📅 ${item.created_at ? item.created_at.split('T')[0] : 'N/A'}</b></div>
-              ${isAdmin ? `
-                <div class="stat-item" style="grid-column: span 2;">
-                  <span>Owner</span>
-                  <b>${escapeHtml(item.owner_username)} (<code>${item.owner_id}</code>)</b>
-                </div>
-              ` : ''}
-            </div>
-            <div style="display:flex; gap:6px; margin-top:8px;">
-              <a href="https://t.me/FILETOLINKSPRBOT?start=${item.id}" class="btn btn-primary" target="_blank">🔗 Open Link</a>
-              <button onclick="handleDelete('${item.id}')" class="btn btn-danger">🗑️ Delete</button>
-            </div>
-          </div>
-        `).join('');
+        window.open("https://t.me/FILETOLINKSPRBOT", "_blank");
       }
-    }
-
-    function handleDelete(id) {
-      if (confirm(`Delete file link ${id}?`)) {
-        if (tg) {
-          tg.sendData(JSON.stringify({ action: "delete_link", id: id }));
-          tg.close();
-        } else {
-          alert("Open via Telegram to execute deletions.");
-        }
-      }
-    }
-
-    function contactAdmin(type) {
-      window.open("https://t.me/MRINFERNAL", "_blank");
-    }
-
-    function escapeHtml(str) {
-      return String(str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
   </script>
 </body>
