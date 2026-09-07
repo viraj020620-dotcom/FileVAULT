@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>File Vault Pro</title>
+  <title>File Vault Dashboard</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
   <style>
     :root {
       --bg: #0b0f19;
@@ -17,7 +16,6 @@
       --text: #f8fafc;
       --text-muted: #94a3b8;
       --danger: #ef4444;
-      --success: #10b981;
       --warning: #f59e0b;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -26,76 +24,60 @@
       background-color: var(--bg);
       color: var(--text);
       padding: 16px;
-      padding-bottom: 50px;
+      padding-bottom: 60px;
     }
     .header { text-align: center; margin-bottom: 16px; }
-    .header h1 { font-size: 22px; font-weight: 800; background: var(--accent-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .header h1 { font-size: 20px; font-weight: 800; background: var(--accent-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .header p { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
-    
     .badge-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
     .badge { padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
     .badge-admin { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
     .badge-vip { background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid var(--warning); }
     .badge-user { background: rgba(56, 189, 248, 0.2); color: var(--accent); border: 1px solid var(--accent); }
-
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 14px;
-      margin-bottom: 12px;
-      backdrop-filter: blur(10px);
-    }
+    .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
     .card-locked { text-align: center; padding: 24px 16px; border: 1px dashed var(--accent); }
-    .feature-list { text-align: left; font-size: 13px; margin: 16px 0; line-height: 1.8; color: var(--text-muted); }
-    .feature-list b { color: var(--text); }
-
-    .btn {
-      display: block; width: 100%; padding: 11px; border-radius: 10px; font-size: 13px; font-weight: 600;
-      text-align: center; text-decoration: none; cursor: pointer; border: none; margin-top: 8px;
-    }
+    .btn { display: block; width: 100%; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600; text-align: center; text-decoration: none; cursor: pointer; border: none; margin-top: 8px; }
     .btn-primary { background: var(--accent-grad); color: #fff; }
     .btn-gold { background: var(--gold-grad); color: #fff; }
-    .btn-sec { background: rgba(255,255,255,0.08); color: var(--text); }
     .btn-danger { background: rgba(239,68,68,0.15); color: var(--danger); border: 1px solid var(--danger); }
-
-    .stats-row {
-      display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px;
-      padding: 8px; background: rgba(0,0,0,0.25); border-radius: 8px; margin: 10px 0;
-    }
+    .stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px; padding: 8px; background: rgba(0,0,0,0.25); border-radius: 8px; margin: 10px 0; }
     .stat-item span { color: var(--text-muted); display: block; font-size: 10px; text-transform: uppercase; }
     .stat-item b { font-size: 13px; }
   </style>
 </head>
 <body>
-
   <div class="header">
-    <h1>FILE VAULT PRO</h1>
-    <p>Admin: MRINFERNAL (@MRINFERNAL)</p>
+    <h1>FILE VAULT DASHBOARD</h1>
+    <p>Admin: @MRINFERNAL</p>
   </div>
-
   <div class="badge-bar">
     <span id="roleBadge" class="badge">Loading...</span>
-    <span id="statusInfo" style="font-size: 12px; color: var(--text-muted);"></span>
+    <span id="totalStats" style="font-size: 12px; color: var(--text-muted);"></span>
   </div>
-
   <div id="mainContainer"></div>
 
   <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
 
     const ADMIN_ID = 5227795354;
-
-    const currentUser = tg.initDataUnsafe?.user || { id: 5227795354, username: "MRINFERNAL" };
-    const isAdmin = (currentUser.id === ADMIN_ID);
+    const currentUser = tg?.initDataUnsafe?.user || { id: ADMIN_ID, username: "MRINFERNAL" };
+    const isAdmin = (Number(currentUser.id) === ADMIN_ID);
 
     const urlParams = new URLSearchParams(window.location.search);
     let payload = { records: [], is_vip: false, webapp_unlocked: false, ref_count: 0 };
+
     try {
       const raw = urlParams.get("data");
-      if (raw) payload = JSON.parse(decodeURIComponent(raw));
-    } catch(e) { console.error(e); }
+      if (raw) {
+        payload = JSON.parse(decodeURIComponent(raw));
+      }
+    } catch(e) {
+      console.error("Payload parse error:", e);
+    }
 
     const isVip = payload.is_vip || isAdmin;
     const isUnlocked = payload.webapp_unlocked || isVip || isAdmin;
@@ -117,46 +99,42 @@
     if (!isUnlocked) {
       container.innerHTML = `
         <div class="card card-locked">
-          <div style="font-size: 36px; margin-bottom: 8px;">🔐</div>
-          <h2 style="font-size: 18px; margin-bottom: 6px;">Web App Dashboard Locked</h2>
-          <p style="font-size: 12px; color: var(--text-muted);">Unlock interactive features far superior to standard bot commands.</p>
-          
-          <div class="feature-list">
-            ✔️ <b>Visual Dashboard:</b> Manage passwords, nicknames & links<br>
-            ✔️ <b>Realtime View Counters:</b> See who accesses your files<br>
-            ✔️ <b>Custom VIP Greetings:</b> Personalized recipient screens<br>
-            ✔️ <b>Instant Link Deleter:</b> Expire sensitive links anytime
-          </div>
-
+          <div style="font-size: 32px; margin-bottom: 8px;">🔐</div>
+          <h2 style="font-size: 16px; margin-bottom: 6px;">Web App Dashboard Locked</h2>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Unlock full visual management, realtime analytics, and instant link controls.</p>
           <div style="background:rgba(56,189,248,0.1); padding:10px; border-radius:8px; font-size:12px; margin-bottom:12px;">
-            👥 Your Referrals: <b>${payload.ref_count || 0} / 2</b>
+            👥 Referrals Completed: <b>${payload.ref_count || 0} / 2</b>
           </div>
-
-          <button onclick="payUnlock()" class="btn btn-gold">⚡ Unlock Instantly for ₹5</button>
-          <button onclick="shareReferral()" class="btn btn-primary">👥 Invite 2 Friends (Free Unlock)</button>
+          <button onclick="contactAdmin('buy_webapp')" class="btn btn-gold">⚡ Unlock Instantly for ₹5</button>
+          <button onclick="contactAdmin('referral')" class="btn btn-primary">👥 Invite 2 Friends (Free)</button>
         </div>
       `;
     } else {
       let records = isAdmin ? payload.records : payload.records.filter(r => String(r.owner_id) === String(currentUser.id));
+      document.getElementById("totalStats").innerText = `Total Links: ${records.length}`;
 
       if (records.length === 0) {
-        container.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:40px;">No files found in database.</p>`;
+        container.innerHTML = `
+          <div class="card" style="text-align: center; padding: 24px 10px;">
+            <p style="color: var(--text-muted); font-size: 13px;">No active file bundles found.</p>
+            <p style="font-size: 12px; color: var(--accent); margin-top: 6px;">Upload files in the bot to see them here.</p>
+          </div>
+        `;
       } else {
         container.innerHTML = records.map(item => `
           <div class="card">
             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
               <div>
-                <b style="font-size:15px;">📦 ${escapeHtml(item.nickname || 'Untitled')}</b>
-                <div style="font-size:11px; color:var(--text-muted);">ID: <code>${item.id}</code> • Files: ${item.file_count}</div>
+                <b style="font-size:14px;">📦 ${escapeHtml(item.nickname || 'Untitled')}</b>
+                <div style="font-size:11px; color:var(--text-muted);">ID: <code>${item.id}</code> • Files: ${item.file_count || 1}</div>
               </div>
               <span class="badge ${item.is_vip ? 'badge-vip' : 'badge-user'}">${item.is_vip ? 'VIP' : 'FREE'}</span>
             </div>
-
             <div class="stats-row">
               <div class="stat-item"><span>Password</span><b>${item.password ? '🔒 ' + escapeHtml(item.password) : '🔓 Public'}</b></div>
-              <div class="stat-item"><span>Views</span><b>👁️ ${item.views || 0} clicks</b></div>
+              <div class="stat-item"><span>Views</span><b>👁️ ${item.views || 0}</b></div>
               <div class="stat-item"><span>Expires</span><b>⏳ ${item.expires_in || 'Permanent'}</b></div>
-              <div class="stat-item"><span>Uploaded</span><b>📅 ${item.created_at ? item.created_at.split('T')[0] : 'N/A'}</b></div>
+              <div class="stat-item"><span>Created</span><b>📅 ${item.created_at ? item.created_at.split('T')[0] : 'N/A'}</b></div>
               ${isAdmin ? `
                 <div class="stat-item" style="grid-column: span 2;">
                   <span>Owner</span>
@@ -164,31 +142,28 @@
                 </div>
               ` : ''}
             </div>
-
-            <div style="display:flex; gap:6px; margin-top:10px;">
-              <a href="https://t.me/FILETOLINKSPRBOT?start=${item.id}" class="btn btn-primary">🔗 Open Link</a>
-              <button onclick="deleteLink('${item.id}')" class="btn btn-danger">🗑️ Delete</button>
+            <div style="display:flex; gap:6px; margin-top:8px;">
+              <a href="https://t.me/FILETOLINKSPRBOT?start=${item.id}" class="btn btn-primary" target="_blank">🔗 Open Link</a>
+              <button onclick="handleDelete('${item.id}')" class="btn btn-danger">🗑️ Delete</button>
             </div>
           </div>
         `).join('');
       }
     }
 
-    function payUnlock() {
-      tg.sendData(JSON.stringify({ action: "buy_webapp" }));
-      tg.close();
-    }
-
-    function shareReferral() {
-      tg.sendData(JSON.stringify({ action: "get_referral_link" }));
-      tg.close();
-    }
-
-    function deleteLink(id) {
-      if (confirm("Delete this file link permanently?")) {
-        tg.sendData(JSON.stringify({ action: "delete_link", id: id }));
-        tg.close();
+    function handleDelete(id) {
+      if (confirm(`Delete file link ${id}?`)) {
+        if (tg) {
+          tg.sendData(JSON.stringify({ action: "delete_link", id: id }));
+          tg.close();
+        } else {
+          alert("Open via Telegram to execute deletions.");
+        }
       }
+    }
+
+    function contactAdmin(type) {
+      window.open("https://t.me/MRINFERNAL", "_blank");
     }
 
     function escapeHtml(str) {
